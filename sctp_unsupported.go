@@ -1,4 +1,6 @@
+//go:build !linux || (linux && 386)
 // +build !linux linux,386
+
 // Copyright 2019 Wataru Ishida. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +27,7 @@ import (
 
 var ErrUnsupported = errors.New("SCTP is unsupported on " + runtime.GOOS + "/" + runtime.GOARCH)
 
-func setsockopt(fd int, optname, optval, optlen uintptr) (uintptr, uintptr, error) {
+func setsockopt(fd, level int, optname, optval, optlen uintptr) (uintptr, uintptr, error) {
 	return 0, 0, ErrUnsupported
 }
 

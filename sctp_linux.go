@@ -1,4 +1,6 @@
+//go:build linux && !386
 // +build linux,!386
+
 // Copyright 2019 Wataru Ishida. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,11 +26,11 @@ import (
 	"unsafe"
 )
 
-func setsockopt(fd int, optname, optval, optlen uintptr) (uintptr, uintptr, error) {
+func setsockopt(fd, level int, optname, optval, optlen uintptr) (uintptr, uintptr, error) {
 	// FIXME: syscall.SYS_SETSOCKOPT is undefined on 386
 	r0, r1, errno := syscall.Syscall6(syscall.SYS_SETSOCKOPT,
 		uintptr(fd),
-		SOL_SCTP,
+		level,
 		optname,
 		optval,
 		optlen,

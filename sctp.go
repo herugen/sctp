@@ -30,7 +30,9 @@ import (
 )
 
 const (
-	SOL_SCTP = 132
+	SOL_SOCKET = 1
+	SOL_SCTP   = 132
+	SO_LINGER  = 13
 
 	SCTP_BINDX_ADD_ADDR = 0x01
 	SCTP_BINDX_REM_ADDR = 0x02
@@ -164,6 +166,12 @@ type AssocInfo struct {
 	CookieLife uint32
 }
 
+/* Structure used to manipulate the SO_LINGER option.  */
+type Linger struct {
+	LOnOff  int /* Nonzero to linger on close.  */
+	LLinger int /* Time to linger.  */
+}
+
 type SndRcvInfo struct {
 	Stream  uint16
 	SSN     uint16
@@ -240,7 +248,7 @@ var ntohs = htons
 // see https://tools.ietf.org/html/rfc4960#page-25
 func setInitOpts(fd int, options InitMsg) error {
 	optlen := unsafe.Sizeof(options)
-	_, _, err := setsockopt(fd, SCTP_INITMSG, uintptr(unsafe.Pointer(&options)), uintptr(optlen))
+	_, _, err := setsockopt(fd, SOL_SCTP, SCTP_INITMSG, uintptr(unsafe.Pointer(&options)), uintptr(optlen))
 	return err
 }
 
@@ -257,7 +265,7 @@ func getRtoInfo(fd int) (*RtoInfo, error) {
 
 func setRtoInfo(fd int, rtoInfo RtoInfo) error {
 	rtolen := unsafe.Sizeof(rtoInfo)
-	_, _, err := setsockopt(fd, SCTP_RTOINFO, uintptr(unsafe.Pointer(&rtoInfo)), uintptr(rtolen))
+	_, _, err := setsockopt(fd, SOL_SCTP, SCTP_RTOINFO, uintptr(unsafe.Pointer(&rtoInfo)), uintptr(rtolen))
 	return err
 }
 
@@ -273,7 +281,7 @@ func getAssocInfo(fd int) (*AssocInfo, error) {
 
 func setAssocInfo(fd int, info AssocInfo) error {
 	optlen := unsafe.Sizeof(info)
-	_, _, err := setsockopt(fd, SCTP_ASSOCINFO, uintptr(unsafe.Pointer(&info)), uintptr(optlen))
+	_, _, err := setsockopt(fd, SOL_SCTP, SCTP_ASSOCINFO, uintptr(unsafe.Pointer(&info)), uintptr(optlen))
 	return err
 }
 
@@ -401,7 +409,7 @@ func SCTPConnect(fd int, addr *SCTPAddr) (int, error) {
 	} else if err != syscall.ENOPROTOOPT {
 		return 0, err
 	}
-	r0, _, err := setsockopt(fd, SCTP_SOCKOPT_CONNECTX, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
+	r0, _, err := setsockopt(fd, SOL_SCTP, SCTP_SOCKOPT_CONNECTX, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
 	return int(r0), err
 }
 
@@ -417,7 +425,7 @@ func SCTPBind(fd int, addr *SCTPAddr, flags int) error {
 	}
 
 	buf := addr.ToRawSockAddrBuf()
-	_, _, err := setsockopt(fd, option, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
+	_, _, err := setsockopt(fd, SOL_SCTP, option, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
 	return err
 }
 
@@ -504,7 +512,7 @@ func (c *SCTPConn) SubscribeEvents(flags int) error {
 		SenderDry:       se,
 	}
 	optlen := unsafe.Sizeof(param)
-	_, _, err := setsockopt(c.fd(), SCTP_EVENTS, uintptr(unsafe.Pointer(&param)), uintptr(optlen))
+	_, _, err := setsockopt(c.fd(), SOL_SCTP, SCTP_EVENTS, uintptr(unsafe.Pointer(&param)), uintptr(optlen))
 	return err
 }
 
@@ -549,9 +557,15 @@ func (c *SCTPConn) SubscribedEvents() (int, error) {
 	return flags, nil
 }
 
+func (c *SCTPConn) SetLinger(linger *Linger) error {
+	optlen := unsafe.Sizeof(*linger)
+	_, _, err := setsockopt(c.fd(), SOL_SOCKET, SO_LINGER, uintptr(unsafe.Pointer(linger)), uintptr(optlen))
+	return err
+}
+
 func (c *SCTPConn) SetDefaultSentParam(info *SndRcvInfo) error {
 	optlen := unsafe.Sizeof(*info)
-	_, _, err := setsockopt(c.fd(), SCTP_DEFAULT_SENT_PARAM, uintptr(unsafe.Pointer(info)), uintptr(optlen))
+	_, _, err := setsockopt(c.fd(), SOL_SCTP, SCTP_DEFAULT_SENT_PARAM, uintptr(unsafe.Pointer(info)), uintptr(optlen))
 	return err
 }
 
