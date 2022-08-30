@@ -27,7 +27,7 @@ import (
 
 var ErrUnsupported = errors.New("SCTP is unsupported on " + runtime.GOOS + "/" + runtime.GOARCH)
 
-func setsockopt(fd, level int, optname, optval, optlen uintptr) (uintptr, uintptr, error) {
+func setsockopt(fd int, level, optname, optval, optlen uintptr) (uintptr, uintptr, error) {
 	return 0, 0, ErrUnsupported
 }
 
